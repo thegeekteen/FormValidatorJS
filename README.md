@@ -84,7 +84,7 @@ const messages = {
     }
 }
 // set error messages to validator
-validator.setErrroMessages(messages);
+validator.setErrorMessages(messages);
 // enable live validation.
 validator.liveValidation(theForm);
 // validate form
