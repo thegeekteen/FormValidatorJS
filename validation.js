@@ -620,6 +620,7 @@ class FormValidator {
      * @returns `true` on success, `false` on failure.
      */
     validateForm(form) {
+        this.#errors = {};
         this.#currentForm = form;
         for (let i = 0; i < form.elements.length; i++) {
             this.#validateSingleForm(form.elements[i]);
@@ -839,6 +840,7 @@ class FormValidator {
      */
     validateObject(data, rules = null, errors = null) {
         // set parameters if passed
+        this.#errors = {};
         if (rules !== null)
             this.#rules = rules;
         if (errors !== null)
