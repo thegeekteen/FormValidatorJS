@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <title>Validation Example</title>
+    <style>
+      form .invalid-feedback ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+</head>
+<body>
+    <div class="row p-5">
+       <div class="col-md-12">
+    <div id="errorList" class="alert alert-danger">
+
+    </div>
+    <form id="theForm" onsubmit="return false" class="row g-3">
+          <label for="validationServer01" class="form-label">Valid Date Form:</label>
+          <input type="text" name="validDate" autocomplete="off"  validation="permit_empty|valid_date[YYYY-MM-DD]" class="form-control"  value="">
+          <div class="invalid-feedback">
+          </div>
+          <label for="validationServer02" class="form-label">Age Form:</label>
+          <input type="text" name="age" autocomplete="off"  validation="required|integer|greater_than_equal_to[18]|less_than_equal_to[60]" class="form-control" value="">
+          <div class="invalid-feedback">
+          </div>
+          <label for="validationServer02" class="form-label">Equals Good Form:</label>
+          <input type="text" name="equalsGoodForm" autocomplete="off"  validation="required|equals[good]" class="form-control" value="">
+          <div class="invalid-feedback">
+          </div>
+          <label for="validationServer02" class="form-label">RegEx Form:</label>
+          <input type="file" name="validFile" autocomplete="off"  validation="required" class="form-control">
+          <div class="invalid-feedback">
+          </div>
+          <label for="validationServer02" class="form-label">Form Select:</label>
+          <select name="selection" autocomplete="off"  validation="required|in_list[Good,Bad]" class="form-control">
+            <option value="None">Please select..</option>
+            <option value="Good">Good</option>
+            <option value="Bad">Bad</option>
+          </select>
+          <div class="invalid-feedback">
+          </div>
+        <div class="form-check">
+          <label class="form-check-label" for="flexRadioDefault1">
+            Accept Terms &amp; Conditions
+        </label>
+          <input class="form-check-input" validation="required" name="termsconditions" value="good" type="checkbox" id="flexRadioDefault1">
+         
+          <div class="invalid-feedback">
+          </div>
+        </div>
+
+        
+
+        <div class="col-12">
+          <button id="submit" class="btn btn-primary">Submit form</button>
+        </div>
+      </form>
+    </div>
+    </div>
+</body>
+<script src="./validation.js"></script>
+<script>
+theForm = document.getElementById("theForm");
+validator = new FormValidator();
+validator.liveValidation(theForm);
+function submit(e) {
+  result = validator.validateForm(theForm);
+  document.getElementById("errorList").innerHTML = validator.prettifyErrorsAll();
+  console.log("Validation Result: " + result);
+  console.log(validator.getErrors());
+  console.log(validator.toJSONObject());
+  console.log(JSON.stringify(validator.toJSONObject()));
+}
+document.getElementById("submit").addEventListener("click", submit);
+</script>
+</html>
