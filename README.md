@@ -140,7 +140,7 @@ const messages = {
     },
 }
 const validator = new FormValidator(); // <-- If you don't need DOM Form Validation, don't add parameters.
-const response = validator.validateObject(data, rules, errors);
+const response = validator.validateObject(data, rules, messages);
 if (response) {
     // validation success
     validation.reset();
