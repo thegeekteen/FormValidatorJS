@@ -15,7 +15,50 @@ class FormValidator {
     #errors = {};
     #validationClasses = [FormValidator.defaultRuleSet];
 
-    #resetHook = function() {
+    /**
+     * Creates an instance of FormValidator.
+     * @param {*} [form=null]
+     * @param {*} [options={
+     *         rules: {},
+     *         errorMessages: {},
+     *         validationClasses: [FormValidator.defaultRuleSet],
+     *         resetHook: null,
+     *         successHook: null,
+     *         failedHook: null,
+     *     }]
+     * @memberof FormValidator
+     */
+    constructor(form = null, options = {
+        rules: {},
+        errorMessages: {},
+        validationClasses: [FormValidator.defaultRuleSet],
+        resetHook: null,
+        successHook: null,
+        failedHook: null,
+    }) {
+        if (form != null)
+            this.#currentForm = form;
+        if (options?.["rules"] !== null && typeof options?.["rules"] !== 'undefined')
+            this.#rules = options["rules"];
+        if (options?.["errorMessages"] !== null && typeof options?.["errorMessages"] !== 'undefined')
+            this.#errorMessages = options["errorMessages"];
+        if (options?.["validationClasses"] !== null && typeof options?.["validationClasses"] !== 'undefined')
+            this.#validationClasses = options["validationClasses"];
+
+        if (options?.["resetHook"] !== null && typeof options?.["resetHook"] !== 'undefined')
+            this.#resetHook = options["resetHook"];
+        if (options?.["successHook"] !== null && typeof options?.["successHook"] !== 'undefined')
+            this.#successHook = options["successHook"];
+        if (options?.["failedHook"] !== null && typeof options?.["failedHook"] !== 'undefined')
+            this.#failedHook = options["failedHook"];
+    }
+
+    resetHook() {
+        if (this.#resetHook !== null)
+            this.#resetHook();
+    }
+
+    #defaultresetHook = function() {
         // Bootstrap 5 - On Reset, Clear all form formatting.
         if (this.#currentForm == null)
             return;
@@ -27,18 +70,22 @@ class FormValidator {
             element.value = null;
         }
     };
-    #successHook = function(element) {
+    #defaultsuccessHook = function(element) {
         // Bootstrap 5 - On Success, Display Valid Style
         element.classList.remove("is-invalid");
         element.classList.add("is-valid");
         element.nextElementSibling.innerHTML = "";
     };
-    #failedHook = function(errorMessage, element) {
+    #defaultfailedHook = function(errorMessage, element) {
         // Bootstrap 5 - On Failure, Display Invalid Style
         element.classList.remove("is-valid");
         element.classList.add("is-invalid");
         element.nextElementSibling.innerHTML = this.prettifyErrors(errorMessage);
     };
+
+    #resetHook = this.#defaultresetHook;
+    #successHook = this.#defaultsuccessHook;
+    #failedHook = this.#defaultfailedHook;
 
     /**
      * Our Default Rule Sets. You can also use your own static validator class.
@@ -342,15 +389,16 @@ class FormValidator {
     reset() {
         this.#errorMessage = "";
         this.#errorMessages = {};
-        this.#rules = {};
-        this.#errors = {};
-        this.#validationClasses = [this.defaultRuleSet];
-        this.#successHook = function(element) {};
-        this.#failedHook = function(errorMessage, element) {};
-        if (this.#currentForm !== null)
-           this.destroyLiveValidation();
+        // this.#rules = {};
+        // this.#errors = {};
+        // this.#validationClasses = [this.defaultRuleSet];
+        // this.#successHook = this.#defaultsuccessHook;
+        // this.#failedHook = this.#defaultfailedHook;
+        // if (this.#currentForm !== null)
+        //    this.destroyLiveValidation();
         if (typeof this.#resetHook === 'function')
             this.#resetHook();
+        // this.#resetHook = this.#defaultresetHook;
     }
 
     /**
@@ -616,14 +664,20 @@ class FormValidator {
      *  console.log(validator.prettifyErrorsAll()); // Get all errors in Unordered List format
      * }
      * ```
-     * @param {Object} form - The DOM Form to Validate
+     * @param {Object} form - The DOM Form to Validate (optional)
      * @returns `true` on success, `false` on failure.
      */
-    validateForm(form) {
+    validateForm(form = null) {
+        if (form !== null)
+            this.#currentForm = form;
+
+        if (this.#currentForm == null)
+            return false;
+
         this.#errors = {};
-        this.#currentForm = form;
-        for (let i = 0; i < form.elements.length; i++) {
-            this.#validateSingleForm(form.elements[i]);
+        
+        for (let i = 0; i < this.#currentForm.elements.length; i++) {
+            this.#validateSingleForm(this.#currentForm.elements[i]);
         }
         return Object.entries(this.#errors).length <= 0;
     }
@@ -639,11 +693,14 @@ class FormValidator {
     /**
      * Enable Live Validation on a specific form
      *
-     * @param {DOM} form - The Form to attach live validations
+     * @param {DOM} form - The Form to attach live validations (optional)
      * @memberof FormValidator
      */
-    liveValidation(form) {
-        this.#currentForm = form;
+    liveValidation(form = null) {
+         if (form !== null)
+            this.#currentForm = form;
+        if (this.#currentForm == null)
+            return;
         this.#currentForm.addEventListener("keyup", this.#liveValidateEvent);
         this.#currentForm.addEventListener("change", this.#liveValidateEvent);
     }

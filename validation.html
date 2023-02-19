@@ -59,6 +59,7 @@
 
         <div class="col-12">
           <button id="submit" class="btn btn-primary">Submit form</button>
+          <button id="reset" class="btn btn-primary">Reset form</button>
         </div>
       </form>
     </div>
@@ -67,16 +68,20 @@
 <script src="./validation.js"></script>
 <script>
 theForm = document.getElementById("theForm");
-validator = new FormValidator();
-validator.liveValidation(theForm);
+validator = new FormValidator(theForm);
+validator.liveValidation();
 function submit(e) {
-  result = validator.validateForm(theForm);
+  result = validator.validateForm();
   document.getElementById("errorList").innerHTML = validator.prettifyErrorsAll();
-  console.log("Validation Result: " + result);
-  console.log(validator.getErrors());
-  console.log(validator.toJSONObject());
-  console.log(JSON.stringify(validator.toJSONObject()));
+  // console.log("Validation Result: " + result);
+  // console.log(validator.getErrors());
+  // console.log(validator.toJSONObject());
+  // console.log(JSON.stringify(validator.toJSONObject()));
+}
+function reset() {
+  validator.resetHook();
 }
 document.getElementById("submit").addEventListener("click", submit);
+document.getElementById("reset").addEventListener("click", reset);
 </script>
 </html>

@@ -20,7 +20,8 @@ Form Validator is a `CodeIgniter 4` inspired form validation plugin for `JavaScr
 ## Usage
 
 Validate forms with this methods/functions:
-- `validateForm(form)` - Validate a DOM Form
+- `validateForm()` - Validate form
+- `liveValidation()` - Enable live validation
 - `validateString(value, rules, messages)` - Validate a string against the rule specified.
 - `validateObject(theObject, rules, messages)` - Validate a Key-Value Object against the rules specified.
 
@@ -45,6 +46,20 @@ Custom Error Validation:
 The Message String can contain variables: `{field}` (the field name), `{value}` (the field value), `{param}` (the param of the validator)
 
 ## Examples
+
+## Options
+
+```javascript
+options = {
+    rules: {},
+    errorMessages: {},
+    validationClasses: [FormValidator.defaultRuleSet],
+    resetHook: null,
+    successHook: null,
+    failedHook: null,
+}
+const validator = new FormValidator(null, options);
+```
 ### Attach Bootstrap 5 Live Validation and Validate Form:
 
 `HTML`:
@@ -68,9 +83,7 @@ The Message String can contain variables: `{field}` (the field name), `{value}` 
 `JavaScript`:
 ```javascript
 const theForm = document.getElementById('theForm');
-// initialize `FormValidator()`
-const validator = new FormValidator();
-// create error messages variable
+// error messages
 const messages = {
     "name": {
         "required":"Your {field} is required.",
@@ -83,15 +96,19 @@ const messages = {
         "less_than_equal_to":"Your age must be {param} and below."
     }
 }
-// set error messages to validator
-validator.setErrorMessages(messages);
+// initialize `FormValidator()`
+const validator = new FormValidator(theForm, {
+    errorMessages: messages
+});
 // enable live validation.
-validator.liveValidation(theForm);
+validator.liveValidation();
 // validate form
-const result = validator.validateForm(theForm) 
+const result = validator.validateForm();
 if (result) {
     // validation success!
-    validator.reset(); // clear form and detach live validation events.
+    validator.reset(); // clear form and errors.
+    // You can also detatch/destroy live validation.
+    validator.destroyLiveValidation();
     } else {
     // there is an error.
     console.log(validator.getErrors()); // Get Errors in object format
@@ -122,6 +139,7 @@ const messages = {
         "less_than_equal_to":"You are already {value}. Maximum age requirement is {param}"
     },
 }
+const validator = new FormValidator(); // <-- If you don't need DOM Form Validation, don't add parameters.
 const response = validator.validateObject(data, rules, errors);
 if (response) {
     // validation success
@@ -143,6 +161,7 @@ const messages = {
     "greater_than_equal_to":"You are only {value}. Minimum age requirement is {param}",
     "less_than_equal_to":"You are already {value}. Maximum age requirement is {param}"
 }
+const validator = new FormValidator(); // <-- If you don't need DOM Form Validation, don't add parameters.
 const response = validator.validateString(value, rules, messages);
 if (response) {
 // age is >= 18 and <= 60
