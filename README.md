@@ -25,7 +25,7 @@ Validate forms with this methods/functions:
 - `validateString(value, rules, messages)` - Validate a string against the rule specified.
 - `validateObject(theObject, rules, messages)` - Validate a Key-Value Object against the rules specified.
 
-All of those methods/functions returns `true` on success, `false`.
+All of those methods/functions returns `true` on success, `false` on failure.
 
 Get the Error Messages after Validation with this methods/functions:
 - `getErrors()` - Returns the error in Key-Value Object
