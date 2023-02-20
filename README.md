@@ -282,7 +282,7 @@ Destroy `FormValidation` instance (including live validation). Please note that 
 validator.reset(true); 
 
 // This will throw exceptions when called after `reset(true)`.
-validator.validate();
+validator.validateForm();
 validator.validateString(...);
 validator.validateObject(...);
 ```
