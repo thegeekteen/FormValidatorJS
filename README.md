@@ -107,7 +107,7 @@ These are the default options:
 options = {
     rules: {},
     errorMessages: {},
-    validationClasses: [FormValidator.defaultRuleSet] // include `FormValidator.defaultRuleSet` for default validation methods.
+    validationClasses: [FormValidator.defaultRuleSet], // include `FormValidator.defaultRuleSet` for default validation methods.
     liveValidation: false, // If you want to validate every form keyup/change
     useDefaultHooks:false, // If you want to use default hooks (for bootstrap 5 forms)
     resetHook: null, // called when `reset()` is executed.
