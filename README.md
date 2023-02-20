@@ -21,25 +21,79 @@ Form Validator is a `CodeIgniter 4` inspired form validation plugin for `JavaScr
 
 Validate forms with this methods/functions:
 - `validateForm()` - Validate form
-- `liveValidation()` - Enable live validation
 - `validateString(value, rules, messages)` - Validate a string against the rule specified.
 - `validateObject(theObject, rules, messages)` - Validate a Key-Value Object against the rules specified.
 
-All of those methods/functions returns `true` on success, `false`.
+All of those methods/functions returns `true` on success, `false` on failure.
 
 Get the Error Messages after Validation with this methods/functions:
 - `getErrors()` - Returns the error in Key-Value Object
 - `prettifyErrorsAll()` - Returns the error in an unordered list format.
-- `prettifyErrors(errorMessage)` - Returns the error in an unordered list format (for usage with custom failed validation hook. `setFailedHook()`)
+- `prettifyErrors(errorMessage)` - Returns the error in an unordered list format (for usage with custom failed validation hook.)
+- `getValidateStringError()` - Returns the error of `validateString()` method.
+- `listErrors(errorMessage)` - Returns the error in array list format (for usage with custom failed validation hook.)
+- `listErrorsAll()` - Returns the error in array list format.
 
 Custom Hooks:
-- `setSuccessHook()` - Set the function hook to run on every field that passed the validation. The function parameters are: `element` (the DOM element of the field).
-- `setFailedHook()` - Set the function hook to run on every field that failed the validation. The function parameters are: `errorMessages` (the errormessages object of the failed validation) and `element` (the DOM element of the field).
+- `setSuccessHook()` - Set the function hook to run on every field that passed the validation (for live validation). The function parameters are: `element` (the DOM element of the field).
+```javascript
+validator.setSuccessHook((element) => {
+    // SUCCESS: do something with element.
+})
+
+// or include in options
+const options = {
+    successHook: (element) => {
+        // SUCCESS: do something with element
+    }
+}
+```
+- `setFailedHook()` - Set the function hook to run on every field that failed the validation (for live validation). The function parameters are: `errorMessages` (the errormessages object of the failed validation) and `element` (the DOM element of the field).
+```javascript
+validator.setFailedHook((errorMessage, element) => {
+    // FAILED: do something with element.
+    console.log(validator.listErrors(errorMessage)); // get errors as array
+})
+
+// or include in options
+const options = {
+    failedHook: (errorMessage, element) => {
+        // FAILED: do something with element.
+        console.log(validator.listErrors(errorMessage)); // get errors as array
+    }
+}
+```
 - `setResetHook()` - Set the function hook to run when `reset()` is called.
+```javascript
+validator.setResetHook(() => {
+    // do something on reset
+})
+
+// or include in options
+const options = {
+    resetHook: () => {
+        // do something on reset
+    }
+}
+```
 
 Custom Error Validation:
 - `setErrorMessages(errorMessages)` - Set the Error Messages Object for Validation Errors.
-- `addValidator(validationClass)` - Add a Validation Class to use.
+```javascript
+const errorMessages = {
+    "name":{
+        "required":"The {field} is required",
+        "exact_length":"{field} with value: '{value}' don't match the exact length of: {param}"
+    }
+}
+validator.setErrorMessages(errorMessages);
+
+// or include in options
+const options = {
+    "errorMessages": errorMessages
+}
+```
+- `addValidator(validationClass)` - Add a Validation Class to use. (see examples below)
 - `setValidator(validationClass)` - Set the Validation Class to use. (will not use the default validation class).
 - `setValidators([validationClass1, validationClass2])` - Set the Validations Classes to use. If you want to also include the default validation class, add `FormValidator.defaultRuleSet` class.
 
@@ -47,18 +101,31 @@ The Message String can contain variables: `{field}` (the field name), `{value}` 
 
 ## Examples
 
-## Options
-
+### Options
+These are the default options:
 ```javascript
 options = {
     rules: {},
     errorMessages: {},
-    validationClasses: [FormValidator.defaultRuleSet],
-    resetHook: null,
-    successHook: null,
-    failedHook: null,
+    validationClasses: [FormValidator.defaultRuleSet] // include `FormValidator.defaultRuleSet` for default validation methods.
+    liveValidation: false, // If you want to validate every form keyup/change
+    useDefaultHooks:false, // If you want to use default hooks (for bootstrap 5 forms)
+    resetHook: null, // called when `reset()` is executed.
+    successHook: null, // called when a validation is succ
+    failedHook: null, // called when validation failed.
 }
-const validator = new FormValidator(null, options);
+const validator = new FormValidator(form, options);
+```
+
+### Initialization
+```javascript
+// Create a new instance.
+// Will throw an Exception when FormValidator is already
+// initialized on the form.
+const validator = new FormValidator(form, options)
+// Get the existing instance. 
+// When not initialized on the form, Create a new instance.
+const validator = FormValidator.getOrCreateInstance(form, options)
 ```
 ### Attach Bootstrap 5 Live Validation and Validate Form:
 
@@ -98,21 +165,20 @@ const messages = {
 }
 // initialize `FormValidator()`
 const validator = new FormValidator(theForm, {
-    errorMessages: messages
+    errorMessages: messages,
+    liveValidation: true,
+    useDefaultHooks: true
 });
-// enable live validation.
-validator.liveValidation();
 // validate form
 const result = validator.validateForm();
 if (result) {
     // validation success!
     validator.reset(); // clear form and errors.
-    // You can also detatch/destroy live validation.
-    validator.destroyLiveValidation();
     } else {
     // there is an error.
     console.log(validator.getErrors()); // Get Errors in object format
     console.log(validator.prettifyErrorsAll()); // Get all errors in Unordered List format
+    console.log(validator.listErrorsAll()); // Get all errors in array format
 }
 ```
 
@@ -140,7 +206,7 @@ const messages = {
     },
 }
 const validator = new FormValidator(); // <-- If you don't need DOM Form Validation, don't add parameters.
-const response = validator.validateObject(data, rules, errors);
+const response = validator.validateObject(data, rules, messages);
 if (response) {
     // validation success
     validation.reset();
@@ -198,6 +264,27 @@ And use on your `HTML` like this:
         </div>
     </div>
 </form>
+```
+
+### Reset Errors
+This will reset errors and execute `reset` hook.
+
+```javascript
+// This will reset errors and execute `reset` hook.
+validator.reset(); 
+```
+
+### Destroy
+Destroy `FormValidation` instance (including live validation). Please note that this will only remove the `FormValidation` instance pointer from the `form` DOM Element, and make validation methods throw `Error` exceptions.
+
+```javascript
+// pass `true` as paramater for hard reset.
+validator.reset(true); 
+
+// This will throw exceptions when called after `reset(true)`.
+validator.validate();
+validator.validateString(...);
+validator.validateObject(...);
 ```
 
 ## Default Validation Rules

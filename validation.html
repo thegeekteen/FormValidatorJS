@@ -17,7 +17,7 @@
 <body>
     <div class="row p-5">
        <div class="col-md-12">
-    <div id="errorList" class="alert alert-danger">
+    <div id="errorList" class="alert alert-info">
 
     </div>
     <form id="theForm" onsubmit="return false" class="row g-3">
@@ -59,7 +59,7 @@
 
         <div class="col-12">
           <button id="submit" class="btn btn-primary">Submit form</button>
-          <button id="reset" class="btn btn-primary">Reset form</button>
+          <button id="reset" class="btn btn-danger">Reset form</button>
         </div>
       </form>
     </div>
@@ -67,19 +67,21 @@
 </body>
 <script src="./validation.js"></script>
 <script>
-theForm = document.getElementById("theForm");
-validator = new FormValidator(theForm);
-validator.liveValidation();
+validator = FormValidator.getOrCreateInstance(document.getElementById("theForm"), {
+  useDefaultHooks:true,
+  liveValidation:true
+});
 function submit(e) {
   result = validator.validateForm();
   document.getElementById("errorList").innerHTML = validator.prettifyErrorsAll();
-  // console.log("Validation Result: " + result);
-  // console.log(validator.getErrors());
-  // console.log(validator.toJSONObject());
-  // console.log(JSON.stringify(validator.toJSONObject()));
+  console.log("Validation Result: " + result);
+  console.log(validator.getErrors());
+  console.log(validator.prettifyErrorsAll());
+  console.log(validator.listErrorsAll());
 }
 function reset() {
-  validator.resetHook();
+  validator.reset();
+  document.getElementById("errorList").innerHTML = validator.prettifyErrorsAll();
 }
 document.getElementById("submit").addEventListener("click", submit);
 document.getElementById("reset").addEventListener("click", reset);

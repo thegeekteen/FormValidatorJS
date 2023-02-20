@@ -9,11 +9,12 @@
  */
 class FormValidator {
     #currentForm = null;
-    #errorMessage = "";
+    #errorMessage = {};
     #errorMessages = {};
     #rules = {};
     #errors = {};
     #validationClasses = [FormValidator.defaultRuleSet];
+
 
     /**
      * Creates an instance of FormValidator.
@@ -25,19 +26,22 @@ class FormValidator {
      *         resetHook: null,
      *         successHook: null,
      *         failedHook: null,
+     *         liveValidation: false
+     *         useDefaultHooks: false
      *     }]
      * @memberof FormValidator
      */
-    constructor(form = null, options = {
-        rules: {},
-        errorMessages: {},
-        validationClasses: [FormValidator.defaultRuleSet],
-        resetHook: null,
-        successHook: null,
-        failedHook: null,
-    }) {
-        if (form != null)
+    constructor(form = null, options = {}) {
+        if (form != null) {
+            if (this.#currentForm?.formValidator instanceof FormValidator)
+                throw new Error("FormValidator is already initialized on the form.");
             this.#currentForm = form;
+            this.#currentForm.formValidator = this;
+        }
+        this.setOptions(options);
+    }
+    
+    setOptions(options = {}) {
         if (options?.["rules"] !== null && typeof options?.["rules"] !== 'undefined')
             this.#rules = options["rules"];
         if (options?.["errorMessages"] !== null && typeof options?.["errorMessages"] !== 'undefined')
@@ -45,12 +49,51 @@ class FormValidator {
         if (options?.["validationClasses"] !== null && typeof options?.["validationClasses"] !== 'undefined')
             this.#validationClasses = options["validationClasses"];
 
-        if (options?.["resetHook"] !== null && typeof options?.["resetHook"] !== 'undefined')
+        if (!options?.["useDefaultHooks"]) {
+            this.#resetHook = null;
+            this.#successHook = null;
+            this.#failedHook = null;
+        } else {
+            this.#resetHook = this.#defaultresetHook;
+            this.#successHook = this.#defaultsuccessHook;
+            this.#failedHook = this.#defaultfailedHook;
+        }
+
+        if (this.#currentForm !== null) {
+            if (typeof options?.["liveValidation"] === 'boolean')
+                this.setLiveValidation(options?.["liveValidation"]);
+        }
+
+        if (typeof options?.["resetHook"] === 'function')
             this.#resetHook = options["resetHook"];
-        if (options?.["successHook"] !== null && typeof options?.["successHook"] !== 'undefined')
+        if (typeof options?.["successHook"] === 'function')
             this.#successHook = options["successHook"];
-        if (options?.["failedHook"] !== null && typeof options?.["failedHook"] !== 'undefined')
+        if (typeof options?.["failedHook"] === 'function')
             this.#failedHook = options["failedHook"];
+    }
+
+    /**
+     * Get or Creates an instance of FormValidator.
+     * @param {*} [form=null]
+     * @param {*} [options={
+     *         rules: {},
+     *         errorMessages: {},
+     *         validationClasses: [FormValidator.defaultRuleSet],
+     *         resetHook: null,
+     *         successHook: null,
+     *         failedHook: null,
+     *         liveValidation: false
+     *         useDefaultHooks: false
+     *     }]
+     * @memberof FormValidator
+     */
+    static getOrCreateInstance(form = null, options = {}) {
+        if (form.formValidator instanceof FormValidator) {
+            form.formValidator.setOptions(options);
+            return form.formValidator;
+        }
+
+        return new FormValidator(form, options);
     }
 
     resetHook() {
@@ -355,15 +398,27 @@ class FormValidator {
         return ConvertedJSON;
     }
 
+    // Anti-XSS
+    escapeHtml(unsafe)
+    {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+
     /**
      * Return Errors in an Unordered List (successHook)
-     * @param {Object} error The Object Errors from successHook
+     * @param {Object} error The Object Errors from failedHook
      * @returns `string` of errors in unordered list.
      */
     prettifyErrors(error) {
         let errorMessage = "<ul>";
         for (const [key, value] of Object.entries(error)) {
-            errorMessage += "<li>" + value + "</li>";
+            errorMessage += "<li>" + this.escapeHtml(value) + "</li>";
         }
         return errorMessage+"</ul>";
     }
@@ -376,29 +431,72 @@ class FormValidator {
         let errorMessage = "<ul>";
         for (const [key, value] of Object.entries(this.#errors)) {
             for (const [key2, value2] of Object.entries(value)) {
-                errorMessage += "<li>"+ value2 + "</li>";
+                errorMessage += "<li>"+ this.escapeHtml(value2) + "</li>";
             }
         }
         return errorMessage+"</ul>";
+    }
+
+     /**
+     * Return Errors in a List Array (successHook)
+     * @param {Object} error The Object Errors from successHook
+     * @returns `array` of errors in unordered list.
+     */
+    listErrors(error) {
+        let errorMessage = [];
+        for (const [key, value] of Object.entries(error)) {
+            errorMessage.push(this.escapeHtml(value));
+        }
+        return errorMessage;
+    }
+
+     /**
+     * Returns All Errors in a List Array
+     * @param {Object} error The Object Errors from successHook
+     * @returns `array` of all errors in unordered list.
+     */
+    listErrorsAll() {
+        let errorMessage = [];
+        for (const [key, value] of Object.entries(this.#errors)) {
+            for (const [key2, value2] of Object.entries(value)) {
+                errorMessage.push(this.escapeHtml(value2));
+            }
+        }
+        return errorMessage;
     }
 
     /**
      * Reset the fields.
      * Only useful if you want to use the same single instance.
      */
-    reset() {
-        this.#errorMessage = "";
-        this.#errorMessages = {};
-        // this.#rules = {};
-        // this.#errors = {};
-        // this.#validationClasses = [this.defaultRuleSet];
-        // this.#successHook = this.#defaultsuccessHook;
-        // this.#failedHook = this.#defaultfailedHook;
-        // if (this.#currentForm !== null)
-        //    this.destroyLiveValidation();
+    reset(hardReset = false) {
+        this.#errors = {};
         if (typeof this.#resetHook === 'function')
             this.#resetHook();
-        // this.#resetHook = this.#defaultresetHook;
+
+        if (hardReset) {
+            this.#errorMessage = null;
+            this.#errorMessages = null;
+            this.#rules = null;
+            this.#validationClasses = null;
+            this.#successHook = null;
+            this.#failedHook = null;
+            if (this.#currentForm !== null) {
+                this.destroyLiveValidation();
+                delete this.#currentForm.formValidator;
+            }
+            this.#resetHook = null;
+            this.#currentForm = null;
+            this.validateForm = () => {
+                throw new Error("This instance is destroyed.");
+            };
+            this.validateString = () => {
+                throw new Error("This instance is destroyed.");
+            };
+            this.validateObject = () => {
+                throw new Error("This instance is destroyed.");
+            };
+        }
     }
 
     /**
@@ -608,7 +706,6 @@ class FormValidator {
             } else {
                 if (typeof this.#failedHook === 'function')
                     this.#failedHook(this.#errorMessage, theElement);
-                
                 break;
             }
         }
@@ -638,8 +735,7 @@ class FormValidator {
      * 
      * In your JavaScript
      * ```js
-     *  const validator = new FormValidator(); // initialize `FormValidator()`
-     *  const messages = {
+     * const messages = {
      *      "name": {
      *          "required":"Your {field} is required.",
      *          "min_length":"The minimum characters of your {field} : {value} should be {param}"  
@@ -651,10 +747,13 @@ class FormValidator {
      *          "less_than_equal_to":"Your age must be {param} and below."
      *      }
      *  }
-     * validator.setErrroMessages(messages);
      * const theForm = document.getElementById('theForm');
-     * validator.liveValidation(theForm); // enable live validation.
-     * const result = validator.validateForm(theForm) // validate all;
+     * const validator = new FormValidator(theForm, {
+     *  errorMessages: messages,
+     *  liveValidation:true,
+     *  useDefaultHooks: true
+     * });
+     * const result = validator.validateForm() // validate all;
      * if (result) {
      *  // validation success!
      *  validator.reset(); // clear form and detach live validation events.
@@ -664,12 +763,9 @@ class FormValidator {
      *  console.log(validator.prettifyErrorsAll()); // Get all errors in Unordered List format
      * }
      * ```
-     * @param {Object} form - The DOM Form to Validate (optional)
      * @returns `true` on success, `false` on failure.
      */
-    validateForm(form = null) {
-        if (form !== null)
-            this.#currentForm = form;
+    validateForm() {
 
         if (this.#currentForm == null)
             return false;
@@ -689,20 +785,33 @@ class FormValidator {
         this.#validateSingleForm(e.target);
     }
 
-
     /**
      * Enable Live Validation on a specific form
      *
      * @param {DOM} form - The Form to attach live validations (optional)
      * @memberof FormValidator
      */
-    liveValidation(form = null) {
-         if (form !== null)
-            this.#currentForm = form;
+    #liveValidation() {
         if (this.#currentForm == null)
             return;
         this.#currentForm.addEventListener("keyup", this.#liveValidateEvent);
         this.#currentForm.addEventListener("change", this.#liveValidateEvent);
+    }
+
+
+     /**
+     * Set Live Validation
+     *
+     * @param {Boolean} enable - `true` if enable, `false` if disable.
+     * @memberof FormValidator
+     */
+    setLiveValidation(enable) {
+        if (enable) {
+            this.destroyLiveValidation();
+            this.#liveValidation();
+        } else {
+            this.destroyLiveValidation();
+        }
     }
 
     /**
@@ -715,8 +824,8 @@ class FormValidator {
         if (this.#currentForm == null)
             return;
 
-        this.#currentForm.removeEventListener("keyup", this.liveValidateEvent);
-        this.#currentForm.removeEventListener("change", this.liveValidateEvent);
+        this.#currentForm.removeEventListener("keyup", this.#liveValidateEvent);
+        this.#currentForm.removeEventListener("change", this.#liveValidateEvent);
     }
 
     /**
@@ -725,8 +834,8 @@ class FormValidator {
      * @returns 
      */
     #whereCallable(theMethod) {
-        for (const i in this.#validationClasses) {
-            if (typeof this.#validationClasses[i][theMethod] === 'function')
+        for (let i in this.#validationClasses) {
+            if (typeof this.#validationClasses[i]?.[theMethod] === 'function')
                 return this.#validationClasses[i][theMethod];
         }
         return undefined;
@@ -978,6 +1087,7 @@ class FormValidator {
      * } else {
      *  // underage.
      *  console.log(validator.getValidateStringError()); // get validation errors
+     *  console.log(validator.listErrorsAll()); // list errors in array format
      * }
      * ```
      * @param {String} value    String to validate
